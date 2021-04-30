@@ -7,6 +7,9 @@ if(CMAKE_VERSION VERSION_LESS 3.7)
   list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/3.7")
 endif()
 
+# Turn off warnings (which should be fixed, though)
+add_compile_options(-Wno-deprecated-declarations)
+
 find_package(GLib2 REQUIRED)
 
 # Configuration and utility functions
