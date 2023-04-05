@@ -1,24 +1,15 @@
 #include <assert.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <glib.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#ifdef WIN32
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-#include <lcm/windows/WinPorting.h>
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <inttypes.h>
 #include <unistd.h>
-#endif
-
-#include <glib.h>
 
 #include "lcmgen.h"
 
@@ -54,18 +45,16 @@ static void mkdir_with_parents(const char *path, mode_t mode)
     g_mkdir_with_parents(path, 0755);
 #else
     int len = strlen(path);
+    char *dirpath = malloc(len + 1);
     for (int i = 0; i < len; i++) {
         if (path[i] == '/') {
-            char *dirpath = (char *) malloc(i + 1);
             strncpy(dirpath, path, i);
-            dirpath[i] = 0;
-
+            dirpath[i] = '\0';
             mkdir(dirpath, mode);
-            free(dirpath);
-
             i++;  // skip the '/'
         }
     }
+    free(dirpath);
 #endif
 }
 
@@ -433,12 +422,12 @@ static void _emit_encode_list(const lcmgen_t *lcm, FILE *f, lcm_struct_t *ls, lc
         !strcmp("int16_t", tn) || !strcmp("int32_t", tn) || !strcmp("int64_t", tn) ||
         !strcmp("float", tn) || !strcmp("double", tn)) {
         if (fixed_len) {
-            emit(indent, "table.insert(buf_table, lcm._pack.pack('>%s%c', unpack(%s)))", len,
+            emit(indent, "table.insert(buf_table, lcm._pack.pack('>%s%c', table.unpack(%s)))", len,
                  _struct_format(lm), accessor);
         } else {
             emit(indent,
                  "table.insert(buf_table, lcm._pack.pack(string.format('>%%d%c', self.%s), "
-                 "unpack(%s)))",
+                 "table.unpack(%s)))",
                  _struct_format(lm), len, accessor);
         }
     } else {
@@ -686,7 +675,8 @@ static void emit_lua_dependencies(const lcmgen_t *lcm, FILE *f, lcm_struct_t *ls
         emit(0, "");
 
     g_ptr_array_free(deps, TRUE);
-    g_hash_table_destroy(dependencies);
+    if (dependencies)
+        g_hash_table_destroy(dependencies);
 }
 
 static void emit_lua_locals(const lcmgen_t *lcm, FILE *f, lcm_struct_t *ls)
@@ -993,7 +983,11 @@ static int emit_package(lcmgen_t *lcm, _package_contents_t *pc)
         lcm_struct_t *ls = (lcm_struct_t *) g_ptr_array_index(pc->structs, i);
 
         char path[PATH_MAX];
-        sprintf(path, "%s%s.lua", package_dir, ls->structname->shortname);
+        int ret = snprintf(path, sizeof(path), "%s%s.lua", package_dir, ls->structname->shortname);
+        if (ret < 0) {
+            fprintf(stderr, "Error: failed to create path string");
+            return -1;
+        }
 
         if (init_lua_fp) {
             // XXX add the 'require' to the appropriate init.lua
@@ -1105,7 +1099,8 @@ static int emit_package(lcmgen_t *lcm, _package_contents_t *pc)
         fclose(init_lua_fp);
     }
 
-    g_hash_table_destroy(initlua_requires);
+    if (initlua_requires)
+        g_hash_table_destroy(initlua_requires);
     return 0;
 }
 
@@ -1149,6 +1144,7 @@ int emit_lua(lcmgen_t *lcm)
 
     g_ptr_array_free(vals, TRUE);
 
-    g_hash_table_destroy(packages);
+    if (packages)
+        g_hash_table_destroy(packages);
     return 0;
 }

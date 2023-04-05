@@ -1,4 +1,5 @@
 #include "lualcm_hash.h"
+
 #include "lua_ver_helper.h"
 #include "stdio.h"
 
@@ -39,14 +40,18 @@ void ll_hash_makemetatable(lua_State *L)
     }
 
     const struct luaL_Reg metas[] = {
-        {"__add", impl_hash_add}, {"__tostring", impl_hash_tostring}, {NULL, NULL},
+        {"__add", impl_hash_add},
+        {"__tostring", impl_hash_tostring},
+        {NULL, NULL},
     };
 
     /* register to meta */
     luaX_registertable(L, metas);
 
     const struct luaL_Reg methods[] = {
-        {"tobytes", impl_hash_tobytes}, {"rotate", impl_hash_rotate}, {NULL, NULL},
+        {"tobytes", impl_hash_tobytes},
+        {"rotate", impl_hash_rotate},
+        {NULL, NULL},
     };
 
     /* register methods to new table, set __index */
@@ -75,7 +80,8 @@ void ll_hash_makemetatable(lua_State *L)
 void ll_hash_register_new(lua_State *L)
 {
     const struct luaL_Reg new_function[] = {
-        {"new", impl_hash_new}, {NULL, NULL},
+        {"new", impl_hash_new},
+        {NULL, NULL},
     };
 
     luaX_registerglobal(L, "lcm._hash", new_function);
@@ -212,7 +218,7 @@ static int impl_hash_rotate(lua_State *L)
     /* do a fancy modulo, because 64 is 2^8, result is always positive*/
     rotation &= 63;
 
-    hashu->hash = hashu->hash << rotation | hashu->hash >> 64 - rotation;
+    hashu->hash = hashu->hash << rotation | hashu->hash >> (64 - rotation);
 
     /* pop the rotation int from the stack, return the hash */
     lua_pop(L, 1);
