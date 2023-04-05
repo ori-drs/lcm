@@ -10,10 +10,10 @@
   <license>LGPL-v2.1</license>
   <url>https://lcm-proj.github.io</url>
 
-  <!-- The following tags are recommended by REP-136 -->
+  <!-- The following tag is recommended by REP-136 -->
   <exec_depend condition="$ROS_VERSION == 1">catkin</exec_depend>
-  <exec_depend condition="$ROS_VERSION == 2">ament_cmake</exec_depend>
 
+  <!-- To build the Python bindings by default -->
   <build_depend condition="$ROS_PYTHON_VERSION == 2">python</build_depend>
   <build_depend condition="$ROS_PYTHON_VERSION == 3">python3</build_depend>
 
